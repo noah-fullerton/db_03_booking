@@ -1,7 +1,7 @@
 """
 CS3810: Principles of Database Systems
 Instructor: Thyago Mota
-Student(s): 
+Student(s): Noah Fullerton, Muhammad Qamar
 Description: A room reservation system
 """
 
@@ -47,11 +47,19 @@ def db_connect():
             PREPARE DeleteReservation AS 
                 DELETE FROM Reservations WHERE code = $1;
         ''')
+
+        cur.execute('''
+            PREPARE ListReservations AS
+                SELECT * FROM ReservationsView;
+        ''')
     return conn
 
 # TODO: display all reservations in the system using the information from ReservationsView
 def list_op(conn):
-    pass
+    with conn.cursor() as cur:
+        cur.execute('execute ListReservations')
+        for row in cur:
+            print(row)
 
 # TODO: reserve a room on a specific date and period, also saving the user who's the reservation is for
 def reserve_op(conn): 
