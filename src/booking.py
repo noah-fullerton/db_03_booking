@@ -1,7 +1,7 @@
 """
 CS3810: Principles of Database Systems
 Instructor: Thyago Mota
-Student(s): Noah Fullerton, Muhammad Qamar
+Student(s): Muhammad Qamar
 Description: A room reservation system
 """
 
@@ -51,28 +51,66 @@ def db_connect():
         cur.execute('''
             PREPARE ListReservations AS
                 SELECT
-                code, room, 
-                to_char(date, 'MM/DD/YYYY') as date, 
+                code,
+                to_char(date, 'MM/DD/YYYY') as date,
+                period, 
                 to_char(start, 'HH24:MI:SS') as start, 
                 to_char("end", 'HH24:MI:SS') as end,
-                period, user
+                room, name
                 FROM ReservationsView;
         ''')
     return conn
 
 def list_op(conn):
+    pass
     with conn.cursor() as cur:
-        cur.execute('execute ListReservations')
-        for row in cur:
-            print(row)
+        cur.execute('EXECUTE ListReservations')
+        rows = cur.fetchall()
+        if not rows:
+            print("No reservations found")
+        else:
+            print("Reservations:")
+            for row in rows:
+                print("Code: ", row[0])
+                print("Date: ", row[1])
+                print("Period: ", row[2])
+                print("Start: ", row[3])
+                print("End: ", row[4])
+                print("Room: ", row[5])
+                print("Name: ", row[6])
+                print("--------------------")
+
 
 # TODO: reserve a room on a specific date and period, also saving the user who's the reservation is for
 def reserve_op(conn): 
     pass
+    with conn.cursor() as cur: 
+        abbr = input('Building abbreviation: ').strip().upper()
+        room = int(input('Room number: ').strip())
+        date = input('Date (YYYY-MM-DD): ').strip()
+        period = input('Period (A-H): ').strip().upper()
+        cur.execute('EXECUTE QueryReservationExists (%s, %s, %s, %s);', (abbr, room, date, period))
+        if cur.fetchone():
+            print('The room is already reserved for that period.')
+            return
+        user = input('User: ').strip()
+        cur.execute('EXECUTE NewReservation (%s, %s, %s, %s);', (abbr, room, date, period))
+        cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
+        conn.commit()
+        print('Reservation created.')
 
 # TODO: delete a reservation given its code
 def delete_op(conn):
     pass
+    with conn.cursor() as cur: 
+        code = int(input('Reservation code: ').strip())
+        cur.execute('EXECUTE QueryReservationExistsByCode (%s);', (code,))
+        if not cur.fetchone():
+            print('Reservation not found.')
+            return
+        cur.execute('DELETE FROM Reservations WHERE code = %s;', (code,))
+        conn.commit()
+        print('Reservation deleted.')
 
 if __name__ == "__main__":
     with db_connect() as conn: 
