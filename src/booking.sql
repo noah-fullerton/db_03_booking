@@ -96,3 +96,14 @@ ORDER BY code DESC;
 
 -- once your view is created and working, run the following line
 GRANT ALL ON TABLE ReservationsView TO booking;
+
+
+SELECT code, abbr, room, date, period, user FROM Reservations;
+
+SELECT
+code, room, 
+to_char(date, 'MM/DD/YYYY') as date, 
+to_char(start, 'HH24:MI:SS') as start, 
+to_char("end", 'HH24:MI:SS') as end,
+period, user
+FROM ReservationsView;

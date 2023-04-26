@@ -50,11 +50,16 @@ def db_connect():
 
         cur.execute('''
             PREPARE ListReservations AS
-                SELECT * FROM ReservationsView;
+                SELECT
+                code, room, 
+                to_char(date, 'MM/DD/YYYY') as date, 
+                to_char(start, 'HH24:MI:SS') as start, 
+                to_char("end", 'HH24:MI:SS') as end,
+                period, user
+                FROM ReservationsView;
         ''')
     return conn
 
-# TODO: display all reservations in the system using the information from ReservationsView
 def list_op(conn):
     with conn.cursor() as cur:
         cur.execute('execute ListReservations')
