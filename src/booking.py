@@ -47,24 +47,13 @@ def db_connect():
             PREPARE DeleteReservation AS 
                 DELETE FROM Reservations WHERE code = $1;
         ''')
-
-        cur.execute('''
-            PREPARE ListReservations AS
-                SELECT
-                code,
-                to_char(date, 'MM/DD/YYYY') as date,
-                period, 
-                to_char(start, 'HH24:MI:SS') as start, 
-                to_char("end", 'HH24:MI:SS') as end,
-                room, name
-                FROM ReservationsView;
-        ''')
     return conn
 
+# TODO: display all reservations in the system using the information from ReservationsView
 def list_op(conn):
     pass
     with conn.cursor() as cur:
-        cur.execute('EXECUTE ListReservations')
+        cur.execute("SELECT * FROM ReservationsView;")
         rows = cur.fetchall()
         if not rows:
             print("No reservations found")
@@ -78,13 +67,13 @@ def list_op(conn):
                 print("End: ", row[4])
                 print("Room: ", row[5])
                 print("Name: ", row[6])
-                print("--------------------")
+                print("--------------------") 
 
 
 # TODO: reserve a room on a specific date and period, also saving the user who's the reservation is for
 def reserve_op(conn): 
     pass
-    with conn.cursor() as cur: 
+    try: 
         abbr = input('Building abbreviation: ').strip().upper()
         room = int(input('Room number: ').strip())
         date = input('Date (YYYY-MM-DD): ').strip()
@@ -98,6 +87,9 @@ def reserve_op(conn):
         cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
         conn.commit()
         print('Reservation created.')
+    except:
+        conn.rollback()
+        print('Invalid Input')
 
 # TODO: delete a reservation given its code
 def delete_op(conn):
