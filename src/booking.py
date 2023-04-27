@@ -73,23 +73,24 @@ def list_op(conn):
 # TODO: reserve a room on a specific date and period, also saving the user who's the reservation is for
 def reserve_op(conn): 
     pass
-    try: 
-        abbr = input('Building abbreviation: ').strip().upper()
-        room = int(input('Room number: ').strip())
-        date = input('Date (YYYY-MM-DD): ').strip()
-        period = input('Period (A-H): ').strip().upper()
-        cur.execute('EXECUTE QueryReservationExists (%s, %s, %s, %s);', (abbr, room, date, period))
-        if cur.fetchone():
-            print('The room is already reserved for that period.')
-            return
-        user = input('User: ').strip()
-        cur.execute('EXECUTE NewReservation (%s, %s, %s, %s);', (abbr, room, date, period))
-        cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
-        conn.commit()
-        print('Reservation created.')
-    except:
-        conn.rollback()
-        print('Invalid Input')
+    with conn.cursor() as cur:
+        try: 
+            abbr = input('Building abbreviation: ').strip().upper()
+            room = int(input('Room number: ').strip())
+            date = input('Date (YYYY-MM-DD): ').strip()
+            period = input('Period (A-H): ').strip().upper()
+            cur.execute('EXECUTE QueryReservationExists (%s, %s, %s, %s);', (abbr, room, date, period))
+            if cur.fetchone():
+                print('The room is already reserved for that period.')
+                return
+            user = input('User: ').strip()
+            cur.execute('EXECUTE NewReservation (%s, %s, %s, %s);', (abbr, room, date, period))
+            cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
+            conn.commit()
+            print('Reservation created.')
+        except:
+            conn.rollback()
+            print('Invalid Input')
 
 # TODO: delete a reservation given its code
 def delete_op(conn):
