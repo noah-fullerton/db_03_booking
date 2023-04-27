@@ -22,6 +22,7 @@ def db_connect():
     params = dict(config.items('db'))
     conn = psycopg2.connect(**params)
     conn.autocommit = False 
+    conn.isolation_level = extensions.ISOLATION_LEVEL_SERIALIZABLE
     with conn.cursor() as cur: 
         cur.execute('''
             PREPARE QueryReservationExists AS 
@@ -62,7 +63,6 @@ def db_connect():
     return conn
 
 def list_op(conn):
-    pass
     with conn.cursor() as cur:
         cur.execute('EXECUTE ListReservations')
         rows = cur.fetchall()
@@ -83,7 +83,6 @@ def list_op(conn):
 
 # TODO: reserve a room on a specific date and period, also saving the user who's the reservation is for
 def reserve_op(conn): 
-    pass
     with conn.cursor() as cur: 
         abbr = input('Building abbreviation: ').strip().upper()
         room = int(input('Room number: ').strip())
@@ -93,15 +92,20 @@ def reserve_op(conn):
         if cur.fetchone():
             print('The room is already reserved for that period.')
             return
-        user = input('User: ').strip()
         cur.execute('EXECUTE NewReservation (%s, %s, %s, %s);', (abbr, room, date, period))
-        cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
+        conn.commit()
+        user = input('User: ').strip()
+        
+        try:
+            cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
+        except: 
+            conn.rollback()
+            return
         conn.commit()
         print('Reservation created.')
 
 # TODO: delete a reservation given its code
 def delete_op(conn):
-    pass
     with conn.cursor() as cur: 
         code = int(input('Reservation code: ').strip())
         cur.execute('EXECUTE QueryReservationExistsByCode (%s);', (code,))
