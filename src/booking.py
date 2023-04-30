@@ -60,6 +60,12 @@ def db_connect():
                 room, name
                 FROM ReservationsView;
         ''')
+
+        cur.execute('''
+            PREPARE QueryReservationCode AS 
+                SELECT code FROM Reservations 
+                WHERE abbr = $1 AND room = $2 AND date = $3 AND period = $4;
+        ''')
     return conn
 
 def list_op(conn):
@@ -83,26 +89,27 @@ def list_op(conn):
 
 # TODO: reserve a room on a specific date and period, also saving the user who's the reservation is for
 def reserve_op(conn): 
-    with conn.cursor() as cur: 
-        abbr = input('Building abbreviation: ').strip().upper()
-        room = int(input('Room number: ').strip())
-        date = input('Date (YYYY-MM-DD): ').strip()
-        period = input('Period (A-H): ').strip().upper()
-        cur.execute('EXECUTE QueryReservationExists (%s, %s, %s, %s);', (abbr, room, date, period))
-        if cur.fetchone():
-            print('The room is already reserved for that period.')
-            return
-        cur.execute('EXECUTE NewReservation (%s, %s, %s, %s);', (abbr, room, date, period))
-        conn.commit()
-        user = input('User: ').strip()
-        
-        try:
+    with conn.cursor() as cur:
+        try: 
+            abbr = input('Building abbreviation: ').strip().upper()
+            room = int(input('Room number: ').strip())
+            date = input('Date (YYYY-MM-DD): ').strip()
+            period = input('Period (A-H): ').strip().upper()
+            cur.execute('EXECUTE QueryReservationExists (%s, %s, %s, %s);', (abbr, room, date, period))
+            if cur.fetchone():
+                print('The room is already reserved for that period.')
+                return
+            cur.execute('EXECUTE NewReservation (%s, %s, %s, %s);', (abbr, room, date, period))
+            user = input('User: ').strip()
             cur.execute('EXECUTE UpdateReservationUser (%s, %s, %s, %s, %s);', (user, abbr, room, date, period))
+            conn.commit()
         except: 
-            conn.rollback()
+            cur.execute('EXECUTE QueryReservationCode (%s, %s, %s, %s);', (abbr, room, date, period))
+            temp_code = cur.fetchone()
+            cur.execute('DELETE FROM Reservations WHERE code = %s;', (temp_code,))
+            conn.commit()
+            print("This is not a valid user.")
             return
-        conn.commit()
-        print('Reservation created.')
 
 # TODO: delete a reservation given its code
 def delete_op(conn):
